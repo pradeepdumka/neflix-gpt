@@ -5,7 +5,8 @@ import { createBrowserRouter,Navigate ,RouterProvider} from 'react-router-dom'
 import Body from './components/Body'
 import Login from './components/Login'
 import Browse from './components/Browse'
-
+ 
+   
 const appRouter = createBrowserRouter([
   {
     path: '/',
@@ -27,6 +28,7 @@ const appRouter = createBrowserRouter([
     ],
   },
 ])
+
 
 function App() {
   return (

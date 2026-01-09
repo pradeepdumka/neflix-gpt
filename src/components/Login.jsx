@@ -1,10 +1,13 @@
 import React, { useRef, useState } from 'react'
-import {  createUserWithEmailAndPassword,signInWithEmailAndPassword } from "firebase/auth";
+import {  createUserWithEmailAndPassword,signInWithEmailAndPassword, updateProfile } from "firebase/auth";
 import { auth } from '../utills/firebase';
 import Header from './Header'
-import { BG_URL } from '../utills/constants'
+import { BG_URL,USER_AVATAR } from '../utills/constants'
 import { validateForm } from '../utills/validation'
+import { useDispatch } from 'react-redux';
+import { addUser } from '../utills/userSlice';
 const Login = () => {
+  const dispatch =useDispatch();
   const [isSignUp ,setIsSignUp] = useState(false);
   const [errorMessage ,setErrorMessage] = useState('');
   
@@ -12,14 +15,12 @@ const Login = () => {
   const password = useRef(null);
   const confirmPassword = useRef(null);
   const name = useRef(null);
+
+
+  const toggleSignUp = () => setIsSignUp(!isSignUp)
+
+  const handleSubmit = () =>{
   
-
-  const toggleSignUp =()=>{
-    setIsSignUp(!isSignUp);
-  }
-
-  const handleSubmit = ()=>{
-   
     const formValidationData= validateForm(email.current.value,password.current.value,name?.current?.value,confirmPassword?.current?.value);
     setErrorMessage(formValidationData);
     if(formValidationData) return;
@@ -27,28 +28,36 @@ const Login = () => {
     if(isSignUp){
       createUserWithEmailAndPassword(auth, email.current.value, password.current.value)
         .then((userCredential) => {
-          // Signed up 
           const user = userCredential.user;
-          console.log("user",user)
-          setErrorMessage("");
-          // ...
+          updateProfile(user, {
+            displayName: name.current.value,
+            photoURL: USER_AVATAR,
+          }).then(() => {
+            const { uid, email, displayName, photoURL } = auth.currentUser;
+            dispatch(
+              addUser({
+                uid: uid,
+                email: email,
+                displayName: displayName,
+                photoURL: photoURL,
+              })
+            );
+            setErrorMessage("");
+          }).catch((error) => {
+            const errorCode = error.code;
+            const errorMessage = error.message;
+            setErrorMessage(errorCode + '-' + errorMessage);
+          });
         })
         .catch((error) => {
           const errorCode = error.code;
           const errorMessage = error.message;
           setErrorMessage(errorCode + '-' + errorMessage);
-          // ..
         });
     }else{
        
       signInWithEmailAndPassword(auth, email.current.value, password.current.value)
-        .then((userCredential) => {
-          // Signed in 
-          const user = userCredential.user;
-          console.log(user)
-          setErrorMessage("");
-          // ...
-        })
+        .then(() => setErrorMessage(""))
         .catch((error) => {
           const errorCode = error.code;
           const errorMessage = error.message;
@@ -59,9 +68,8 @@ const Login = () => {
   return (
     <div>
       <Header />
-
       <div className='absolute'>
-       <img src={BG_URL} alt="logo" />
+       <img className='h-screen' src={BG_URL} alt="logo" />
       </div>
 
       <form className= 'absolute w-1/3 p-12 bg-black bg-opacity-80 my-36 mx-auto right-0 left-0 text-white rounded-lg'>
@@ -77,7 +85,6 @@ const Login = () => {
         <button type='button' className='p-4 my-6 bg-red-700 w-full rounded-lg' onClick={()=>handleSubmit()}>{isSignUp? "Sign up":"Sign in"}</button>
         <p className='p-1 text-md'>{isSignUp? "Already have an account ":"New to Netflix?"} <span className='text-red-700 cursor-pointer' onClick={()=>toggleSignUp()}>{isSignUp? "Login ":"New to Netflix?"}</span> </p>
        </form>
-
     </div>
   )
 }
